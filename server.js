@@ -1,47 +1,65 @@
-var express= require('express');
+var express = require('express');
 var webApp = express();
 var bodyParser = require('body-parser');
 var nodeMailer = require('nodemailer');
+var fs =  require('fs');
+var cors = require('cors');
 let trasporter = nodeMailer.createTransport({
-  service:"Gmail",
-  auth:{
-    user:'ameloamelo89@gmail.com',
-    pass:'Andy8906',
-  }
+    service: "Gmail",
+    auth: {
+        user: 'ameloamelo89@gmail.com',
+        pass: 'Andy8906',
+    }
 })
-
+webApp.use(cors());
 webApp.use(bodyParser.json());
-webApp.use(bodyParser.urlencoded({extended: true}))
+webApp.use(bodyParser.urlencoded({
+    extended: true
+}))
 
 
 webApp.get('/', function(req, res) {
-  res.send("hello Andy");
+    res.send("hello Andy");
 });
 
-webApp.post('/email', function(req, res) {
-  var postedData = req.body;
-    // res.json(postedData);
-    trasporter.sendMail({
-      from:'ameloamelo89@gmail.com',
-      to:postedData.to,
-      html:postedData.msg
-    },
-    function(err, info){
-      if(err){
-      console.log(JSON.stringify(err));
-      return res.sendStatus(500);
-    }
-    console.log(JSON.stringify(info));
-    res.json(info);
+webApp.post('/send-resume', function(req, res) {
+            if (!req.body || !req.body.destination_email) {
+                console.log("recived a bad request");
+                res.sendStatus(400);
+                return;
+            }
+            fs.readFile('./resume.html', function(err, theThingInTheFile) {
+                if (err) {
+                    console.log(JSON.stringify(err));
+                    res.sendStatus(500);
+                    return;
+                }
+
+                trasporter.sendMail({
+                        to: req.body.destination_email,
+                        subject: 'this is a test for resume',
+                        html: theThingInTheFile
+                    },
+                    function(err, info) {
+                        if (err) {
+                            console.log(JSON.stringify(err));
+                            res.sendStatus(500);
+                            return;
+                        }
+                        console.log(JSON.stringify(info));
+                        res.json(info);
+                    })
+            });
+          });
+
+webApp.get('/send-resume', function (req,res) {
+  fs.readFile('./resume-emailer.html',function(err, contents){
+    res.end(contents);
+
+
+
   })
 });
 
-// webApp.get('/:num1/:num2', function(req, res) {
-//   var n1 = req.params.num1;
-//   var n2 = req.params.num2;
-//   var sum = Number(n1) + Number(n2);
-//   res.send("the sum of your number is + "sum " +")
-// })
-
-webApp.listen(8967);
-console.log('server listening');
+            webApp.listen(8967);
+            console.log('server listening');
